@@ -23,12 +23,41 @@ const app = express();
 app.use(express.json()); //add body parser to each following route handler
 app.use(cors()) //add CORS support to each following route handler
 
-const client = new Client(dbConfig);
+const client = new Client('pasteBinDb');
 client.connect();
 
-app.get("/", async (req, res) => {
-  const dbres = await client.query('select * from categories');
-  res.json(dbres.rows);
+app.get("/pastes/", async (req, res) => {
+  const text = "select * from paste_list order by date desc limit 10";
+  const dbres = await client.query(text);
+  res.status(200).json(dbres.rows);
+});
+
+app.post("/pastes/", async (req, res) => {
+  const { content, title } = req.body;
+  if (typeof content === "string"  && typeof title  === "string") {
+    const values =  [title, content];
+    const text = "insert into paste_list (title, content) values ($1,$2) returning *";
+    const newPost = await client.query(text, values);
+    res.status(200).json({ 
+      status: "success",
+      data : newPost
+});
+  }
+  else if (typeof content === "string" ) {
+    const values =  [content];
+    const text = "insert into paste_list (content) values ($1) returning *";
+    const newPost = await client.query(text, values);
+    res.status(200).json({ 
+      status: "success",
+      data : newPost.rows
+});
+  }
+  else {
+    res.status(400).json ({
+      status: "Fail",
+      message: "The content of paste has to be a string"
+    })
+  }
 });
 
 
