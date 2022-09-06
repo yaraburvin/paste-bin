@@ -32,7 +32,7 @@ app.get("/pastes/", async (req, res) => {
   res.status(200).json(dbres.rows);
 });
 
-app.get("/pastes/:id", async (req,res) => {
+app.get<{id : string}>("/pastes/:id", async (req,res) => {
   const id = parseInt(req.params.id);
   const text = "select * from paste_list where id = $1"
   const selectedPaste = await client.query(text, [id])
