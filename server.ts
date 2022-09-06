@@ -32,6 +32,19 @@ app.get("/pastes/", async (req, res) => {
   res.status(200).json(dbres.rows);
 });
 
+app.get("/pastes/:id", async (req,res) => {
+  const id = req.params.id;
+  const text = "select * from paste_list where id = $1"
+  const selectedPaste = await client.query(text, [id])
+  if (selectedPaste.rowCount === 1) {
+    res.status(200).json(selectedPaste.rows)
+  }
+  else {
+    res.status(400).json({
+      status : "Fail"
+    })
+  }
+})
 app.post("/pastes/", async (req, res) => {
   const { content, title } = req.body;
   if (typeof content === "string"  && typeof title  === "string") {
