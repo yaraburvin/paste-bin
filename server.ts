@@ -18,7 +18,7 @@ const dbConfig = {
   ssl: sslSetting,
 };
 
-const app = express();
+ const app = express();
 
 app.use(express.json()); //add body parser to each following route handler
 app.use(cors()) //add CORS support to each following route handler
@@ -67,13 +67,90 @@ app.post("/pastes/", async (req, res) => {
   }
   else {
     res.status(400).json ({
-      status: "Fail",
+      status: "fail",
       message: "The content of paste has to be a string"
     })
   }
 });
 
+app.delete("/pastes/:pasteId", async (req,res) => {
+  const pasteId = parseInt(req.params.pasteId)
+  const text = 'delete from paste_list where id = $1 returning *'
+  const deletedPaste = await client.query(text,[pasteId])
+  if (deletedPaste.rowCount === 1) {
+    res.status(200).json({
+      status: 'success',
+      data : deletedPaste.rows
+    })
+  }
+  else {
+    res.status(400).json({
+      status : "fail",
+      message : "no paste found with such id"
+    })}
+})
+app.get ("/pastes/:pasteId/comments", async (req,res) => {
+  const pasteId = parseInt(req.params.pasteId)
+  const text = 'select * from comments where paste_id = $1 '
+  const comments = await client.query(text,[pasteId])
+  const paste = await client.query('select * from paste_list where id = $1', [pasteId])
+  if (paste.rowCount === 1) {
+    res.status(200).json (comments.rows)
+  }
+  else {
+    res.status(404).json({
+      status : "fail",
+      message : "Paste could not be found"
+    })
+  }
+})
 
+app.post("/pastes/:pasteId/comments", async (req,res) => {
+  const {username, comment} = req.body
+  const pasteId = parseInt(req.params.pasteId)
+  if (typeof comment === "string" && comment.length > 0) {
+    const text = 'insert into comments (username, comment, paste_id) values ($1,$2,$3) returning *'
+    const values = [username, comment, pasteId]
+    const newPaste = await client.query(text,values)
+    if (newPaste.rowCount === 1) {
+      res.status(200).json ({
+        status: "success",
+        data : newPaste.rows
+      })
+    }
+    else {
+      res.status(404).json({
+        status : "fail",
+        message : "Paste could not be found"
+      })
+    }
+  }
+  else {
+    res.status(400).json ({
+      status: "fail",
+      message: "The comment has to be a non-empty string "
+    })
+  }
+})
+
+app.delete("/pastes/:pasteId/comments/:commentId", async (req,res) => {
+  const commentId = parseInt(req.params.commentId)
+  const text = 'delete from comments where id = $1 returning *'
+  const deletedComment = await client.query(text, [commentId])
+  if (deletedComment.rowCount === 1) {
+    res.status(200).json({
+      status: 'success',
+      data : deletedComment.rows
+    })
+  }
+  else {
+    res.status(400).json({
+      status : "fail",
+      message : "no comment with such id"
+    })
+  }
+
+})
 //Start the server on the given port
 const port = process.env.PORT;
 if (!port) {
@@ -82,3 +159,5 @@ if (!port) {
 app.listen(port, () => {
   console.log(`Server is up and running on port ${port}`);
 });
+
+export default app
