@@ -23,7 +23,7 @@ const dbConfig = {
 app.use(express.json()); //add body parser to each following route handler
 app.use(cors()) //add CORS support to each following route handler
 
-const client = new Client("pasteBinDb");
+const client = new Client(dbConfig);
 client.connect();
 
 app.get("/pastes/", async (req, res) => {
